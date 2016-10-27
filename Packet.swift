@@ -14,7 +14,7 @@ class Packet {
     //Creates CRC
     //@param: Array of Uint8 (hex) values
     //@return: uint CRC calculation
-    class func getCRC(data:[UInt8]) -> UInt8 {
+    class func getCRC(forPacket data:[UInt8]) -> UInt8 {
         
         var counter = 0
         var total:UInt8 = data.first!
@@ -48,7 +48,7 @@ class Packet {
         }
         
         //Add CRC
-        packet.append(getCRC(data: packet))
+        packet.append(getCRC(forPacket: packet))
         
         return packet
     }

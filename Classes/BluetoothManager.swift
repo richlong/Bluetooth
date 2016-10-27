@@ -11,6 +11,9 @@ import CoreBluetooth
 
 enum HexPacketPrefix:UInt8 {
     case TodaysData = 0x43
+    case GetUserDetails = 0x42
+    case RealTimeStepMeter = 0x09
+    case GetTime = 0x41
 }
 
 class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
@@ -149,15 +152,28 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
         
         if self.transferCharacteristic != nil && self.recieveCharacteristic != nil {
             // RX & TX Set - request info
-            self.getTodaysData()
+//            getTodaysData()
+            getDeviceTime()
         }
         
     }
     
+    func sendPacketToDevice(firstBytes:[UInt8]) {
+        
+        let data = Data.init(bytes: Packet.createPacket(firstBytes: firstBytes))
+        self.discoveredPeripheral?.writeValue(data, for: transferCharacteristic!, type: CBCharacteristicWriteType.withResponse)
+
+    }
+    
     func getTodaysData() {
         
-        let data = Data.init(bytes: Packet.createPacket(firstBytes: [HexPacketPrefix.TodaysData.rawValue]))
-        self.discoveredPeripheral?.writeValue(data, for: transferCharacteristic!, type: CBCharacteristicWriteType.withResponse)
+        sendPacketToDevice(firstBytes:  [HexPacketPrefix.TodaysData.rawValue])
+
+    }
+    
+    func getDeviceTime() {
+        
+        sendPacketToDevice(firstBytes:  [HexPacketPrefix.GetTime.rawValue])
 
     }
     
@@ -165,17 +181,28 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
         
         let firstByte:UInt8 = packet.first!
         
-        print(packet)
         
         switch firstByte {
         case HexPacketPrefix.TodaysData.rawValue:
-            //Steps
             print("Step packet")
+            print(packet)
             break
+        case HexPacketPrefix.GetTime.rawValue:
+            print("GetTime packet")
+            print(packet)
+            
+            break
+        case HexPacketPrefix.RealTimeStepMeter.rawValue:
+            print("Realtime step")
+            break
+
         default:
-            print("packet error")
+            print("packet unknown")
+            print(packet)
+
         }
         
+
         
     }
     
