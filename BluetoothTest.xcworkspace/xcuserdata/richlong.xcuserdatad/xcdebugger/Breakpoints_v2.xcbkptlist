@@ -6,16 +6,16 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            shouldBeEnabled = "No"
+            shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Classes/BluetoothManager.swift"
-            timestampString = "499293099.921541"
+            timestampString = "499639558.148181"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "216"
-            endingLineNumber = "216"
-            landmarkName = "peripheral(_:didUpdateValueFor:error:)"
+            startingLineNumber = "232"
+            endingLineNumber = "232"
+            landmarkName = "sendPacketToDevice(firstBytes:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -26,12 +26,12 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Classes/BluetoothManager.swift"
-            timestampString = "499292916.820465"
+            timestampString = "499640453.893225"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "82"
-            endingLineNumber = "82"
-            landmarkName = "centralManager(_:didDiscover:advertisementData:rssi:)"
+            startingLineNumber = "304"
+            endingLineNumber = "304"
+            landmarkName = "parseDate(packet:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -41,13 +41,13 @@
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "Classes/BluetoothManager.swift"
-            timestampString = "499293099.921541"
+            filePath = "Packet.swift"
+            timestampString = "499640483.224629"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "200"
-            endingLineNumber = "200"
-            landmarkName = "processPacket(packet:)"
+            startingLineNumber = "73"
+            endingLineNumber = "73"
+            landmarkName = "stringToInt(string:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

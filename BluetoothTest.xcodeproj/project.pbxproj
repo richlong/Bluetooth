@@ -133,7 +133,7 @@
 				TargetAttributes = {
 					44BAAF401DB557BC00B95BC3 = {
 						CreatedOnToolsVersion = 8.0;
-						DevelopmentTeam = Z66AAA337X;
+						DevelopmentTeam = 3T9Z66Y6B6;
 						LastSwiftMigration = 0800;
 						ProvisioningStyle = Automatic;
 					};
@@ -350,14 +350,14 @@
 			baseConfigurationReference = BBF85D45F854552DBCBC70D4 /* Pods-BluetoothTest.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				DEVELOPMENT_TEAM = Z66AAA337X;
+				DEVELOPMENT_TEAM = 3T9Z66Y6B6;
 				INFOPLIST_FILE = BluetoothTest/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/lib",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.richlong.BluetoothTest;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richlong.BluetoothTest2;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 3.0;
 			};
@@ -368,14 +368,14 @@
 			baseConfigurationReference = AFCE7EDA9CE5DB9FC175FACE /* Pods-BluetoothTest.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				DEVELOPMENT_TEAM = Z66AAA337X;
+				DEVELOPMENT_TEAM = 3T9Z66Y6B6;
 				INFOPLIST_FILE = BluetoothTest/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/lib",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.richlong.BluetoothTest;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richlong.BluetoothTest2;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 3.0;
 			};

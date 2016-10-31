@@ -13,6 +13,7 @@ enum HexPacketPrefix:UInt8 {
     case TodaysData = 0x43
     case GetUserDetails = 0x42
     case RealTimeStepMeter = 0x09
+    case SetTime = 0x01
     case GetTime = 0x41
 }
 
@@ -32,7 +33,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
         centralManager = CBCentralManager(delegate: self, queue: nil)
     }
     
-    //Mark: CBCentralManagerDelegate
+    //MARK: CBCentralManagerDelegate
     
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         
@@ -105,7 +106,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
     
     
     
-    //Mark: CBPeripheralDelegate
+    //MARK: CBPeripheralDelegate
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         
@@ -153,56 +154,10 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
         if self.transferCharacteristic != nil && self.recieveCharacteristic != nil {
             // RX & TX Set - request info
 //            getTodaysData()
+            setDeviceTime()
             getDeviceTime()
-        }
-        
-    }
-    
-    func sendPacketToDevice(firstBytes:[UInt8]) {
-        
-        let data = Data.init(bytes: Packet.createPacket(firstBytes: firstBytes))
-        self.discoveredPeripheral?.writeValue(data, for: transferCharacteristic!, type: CBCharacteristicWriteType.withResponse)
-
-    }
-    
-    func getTodaysData() {
-        
-        sendPacketToDevice(firstBytes:  [HexPacketPrefix.TodaysData.rawValue])
-
-    }
-    
-    func getDeviceTime() {
-        
-        sendPacketToDevice(firstBytes:  [HexPacketPrefix.GetTime.rawValue])
-
-    }
-    
-    func processPacket(packet:[UInt8]) {
-        
-        let firstByte:UInt8 = packet.first!
-        
-        
-        switch firstByte {
-        case HexPacketPrefix.TodaysData.rawValue:
-            print("Step packet")
-            print(packet)
-            break
-        case HexPacketPrefix.GetTime.rawValue:
-            print("GetTime packet")
-            print(packet)
-            
-            break
-        case HexPacketPrefix.RealTimeStepMeter.rawValue:
-            print("Realtime step")
-            break
-
-        default:
-            print("packet unknown")
-            print(packet)
 
         }
-        
-
         
     }
     
@@ -226,69 +181,6 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
             return
         }
     }
-    
-//        
-//        
-////        print("return: \(array)")
-//        
-//        guard let stringFromData = NSString(data: characteristic.value!, encoding: String.Encoding.utf8.rawValue) else {
-//            print("Invalid data")
-//            return
-//        }
-//        
-//        print("Received: \(stringFromData)")
-//        
-//        print(characteristic.properties, characteristic.uuid,characteristic.service,characteristic.value)
-//        
-//        if let data:Data = characteristic.value {
-//            
-//            
-//            print("Received: \(data.count, data))")
-//            
-//            //            let b: UInt8 = data.
-//            
-//            //            print(Character(UnicodeScalar(b)))
-//            
-//            //            _ = NSString(data: data, encoding: String.Encoding.utf8.rawValue)
-//            
-//            
-//            
-//        }
-        
-        
-        
-        //        // Have we got everything we need?
-        //        if stringFromData.isEqualToString("EOM") {
-        //            // We have, so show the data,
-        //            textView.text = String(data: data.copy() as! NSData, encoding: NSUTF8StringEncoding)
-        //
-        //            // Cancel our subscription to the characteristic
-        //            peripheral.setNotifyValue(false, forCharacteristic: characteristic)
-        //
-        //            // and disconnect from the peripehral
-        //            centralManager?.cancelPeripheralConnection(peripheral)
-        //        } else {
-        //            // Otherwise, just add the data on to what we already have
-        //            data.appendData(characteristic.value!)
-        //
-        //            // Log it
-        //            print("Received: \(stringFromData)")
-        //        }
-        //
-        //
-//    }
-    
-//    func getPacket(char:CBCharacteristic) {
-//        
-//        if let data:Data = char.value {
-//            
-//            data.count
-//            
-//        }
-//        
-//        
-    
-//    }
 
     //MARK: Clean up methods
     
@@ -330,5 +222,88 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
         // If we've got this far, we're connected, but we're not subscribed, so we just disconnect
         centralManager?.cancelPeripheralConnection(discoveredPeripheral!)
     }
+    
+    //MARK: Communication Methods
+    
+    
+    func sendPacketToDevice(firstBytes:[UInt8]) {
+        
+        let data = Data.init(bytes: Packet.createPacket(firstBytes: firstBytes))
+        self.discoveredPeripheral?.writeValue(data, for: transferCharacteristic!, type: CBCharacteristicWriteType.withResponse)
+    }
+    
+    func getTodaysData() {
+        sendPacketToDevice(firstBytes:  [HexPacketPrefix.TodaysData.rawValue])
+    }
+    
+    func setDeviceTime() {
+    
+        let date = Date()
+        print("Setting device date to: \(date)")
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyMMddHHmmss"
+        let dateString = dateFormatter.string(from: date)
+        let characters = Array(dateString.characters)
+        
+        var packetArray:[UInt8] = []
+        packetArray.append(HexPacketPrefix.SetTime.rawValue)
+        
+        let year = "\(characters[0])\(characters[1])"
+        packetArray.append(Packet.stringToHex(string: year)!)
+        
+        let month = "\(characters[2])\(characters[3])"
+        packetArray.append(Packet.stringToHex(string: month)!)
+        
+        let day = "\(characters[4])\(characters[5])"
+        packetArray.append(Packet.stringToHex(string: day)!)
+        
+        let hour = "\(characters[6])\(characters[7])"
+        packetArray.append(Packet.stringToHex(string: hour)!)
+        
+        let minute = "\(characters[8])\(characters[9])"
+        packetArray.append(Packet.stringToHex(string: minute)!)
+        
+        let second = "\(characters[10])\(characters[11])"
+        packetArray.append(Packet.stringToHex(string: second)!)
+        
+        sendPacketToDevice(firstBytes:packetArray)
+    }
+    
+    func getDeviceTime() {
+        sendPacketToDevice(firstBytes:  [HexPacketPrefix.GetTime.rawValue])
+    }
+    
+    func processPacket(packet:[UInt8]) {
+        
+        let firstByte:UInt8 = packet.first!
+        
+        switch firstByte {
+        case HexPacketPrefix.TodaysData.rawValue:
+            print("Step packet")
+            print(packet)
+            break
+        case HexPacketPrefix.GetTime.rawValue:
+            print("GetTime packet")
+            parseDate(packet: packet)
+            break
+        case HexPacketPrefix.RealTimeStepMeter.rawValue:
+            print("Realtime step")
+            break
+            
+        default:
+            print("packet unknown")
+            print(packet)
+            
+        }
+        
+    }
+    
+    func parseDate(packet:[UInt8]) {
+        let packetArray = Packet.convertPacketToIntArray(packet: packet)
+        print(packetArray)
+    }
+
+//    [65, 22, 16, 49, 32, 70, 6, 0, 0, 0, 0, 0, 0, 0, 0, 4]
     
 }

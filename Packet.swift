@@ -53,4 +53,54 @@ class Packet {
         return packet
     }
     
+    class func stringToHex(string:String) -> UInt8? {
+        
+        guard (string.rangeOfCharacter(from: NSCharacterSet.decimalDigits) != nil) else {
+            print("Error contains non numeric character.")
+            return nil
+        }
+        
+        if let value = UInt8(string, radix: 16) {
+            return value
+        }
+        
+        return nil
+    }
+    class func stringToInt(string:String) -> Int? {
+        
+        guard (string.rangeOfCharacter(from: NSCharacterSet.decimalDigits) != nil) else {
+            print("Error contains non numeric character.")
+            return nil
+        }
+        
+        if let number = Int(string) {
+            return number
+        }
+        
+        return nil
+        
+    }
+
+    class func convertPacketToIntArray(packet:[UInt8]) -> [Int] {
+        
+        print(packet)
+        var array = [Int]()
+        for byte in packet {
+            let string = String(format:"%2X", byte)
+            
+            if let int = Packet.stringToInt(string: string) {
+                array.append(int)
+            }
+            else {
+                array.append(-1)
+            }
+            
+        }
+        
+        return array
+    }
+    
+
+
+    
 }
