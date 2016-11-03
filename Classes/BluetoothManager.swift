@@ -12,9 +12,11 @@ import CoreBluetooth
 enum HexPacketPrefix:UInt8 {
     case TodaysData = 0x43
     case GetUserDetails = 0x42
+    case SetUserDetails = 0x02
     case RealTimeStepMeter = 0x09
     case SetTime = 0x01
     case GetTime = 0x41
+
 }
 
 class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
@@ -154,8 +156,11 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
         if self.transferCharacteristic != nil && self.recieveCharacteristic != nil {
             // RX & TX Set - request info
 //            getTodaysData()
-            setDeviceTime()
+//            setDeviceTime()
             getDeviceTime()
+            
+            setUserDetails(gender: 00, age: 56, height: 180, weight: 99, strideLength: 99)
+            getUserDetails()
 
         }
         
@@ -223,8 +228,8 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
         centralManager?.cancelPeripheralConnection(discoveredPeripheral!)
     }
     
+    //MARK:
     //MARK: Communication Methods
-    
     
     func sendPacketToDevice(firstBytes:[UInt8]) {
         
@@ -232,9 +237,47 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
         self.discoveredPeripheral?.writeValue(data, for: transferCharacteristic!, type: CBCharacteristicWriteType.withResponse)
     }
     
+    func processPacket(packet:[UInt8]) {
+        
+        let firstByte:UInt8 = packet.first!
+        
+        switch firstByte {
+        case HexPacketPrefix.TodaysData.rawValue:
+            print("Step packet \(packet)")
+            break
+        case HexPacketPrefix.GetTime.rawValue:
+            parseDate(packet: packet)
+            break
+        case HexPacketPrefix.RealTimeStepMeter.rawValue:
+            print("Realtime step")
+            break
+        case HexPacketPrefix.GetUserDetails.rawValue:
+            parseUserDetails(packet: packet)
+            break
+        case HexPacketPrefix.SetUserDetails.rawValue:
+            print("SetUserDetails: \(packet)")
+            break
+            
+        default:
+            print("Packet unknown: \(packet)")
+        }
+        
+    }
+
+    
     func getTodaysData() {
         sendPacketToDevice(firstBytes:  [HexPacketPrefix.TodaysData.rawValue])
     }
+    
+    //MARK: Device time
+    
+    /*
+     0x01 AA BB CC DD EE FF 00 00 00 00 00 00 00 00 CRC
+     AA year;BB month;CC day;DD hour;EE minute;FF second。format is BCD，for
+     example,12 year，AA = 0x12
+     
+     Check right and execute OK, then return:: 0x01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 CRC Check error and execute Fail, then return: 0x81 00 00 00 00 00 00 00 00 00 00 00 00 00 00 CRC
+     */
     
     func setDeviceTime() {
     
@@ -274,36 +317,44 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
         sendPacketToDevice(firstBytes:  [HexPacketPrefix.GetTime.rawValue])
     }
     
-    func processPacket(packet:[UInt8]) {
-        
-        let firstByte:UInt8 = packet.first!
-        
-        switch firstByte {
-        case HexPacketPrefix.TodaysData.rawValue:
-            print("Step packet")
-            print(packet)
-            break
-        case HexPacketPrefix.GetTime.rawValue:
-            print("GetTime packet")
-            parseDate(packet: packet)
-            break
-        case HexPacketPrefix.RealTimeStepMeter.rawValue:
-            print("Realtime step")
-            break
-            
-        default:
-            print("packet unknown")
-            print(packet)
-            
-        }
-        
+    func parseDate(packet:[UInt8]) {
+        let packetArray = Packet.convertPacketToIntArrayFromHex(packet: packet)
+        print("parseDate: \(packetArray)")
     }
     
-    func parseDate(packet:[UInt8]) {
-        let packetArray = Packet.convertPacketToIntArray(packet: packet)
-        print(packetArray)
+    //MARK: User details
+    
+    /*
+     0x02 AA BB CC DD EE FF 00 00 00 00 00 00 00 00CRC
+     AA:gender(0 stands for female，1 stands for male)，BB:age，CC:height，DD:weight， EE:stride length;
+     
+     Check right and execute OK, then return: 0x02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 CRC
+     Check error and execute Fail, then return:0x82 00 00 00 00 00 00 00 00 00 00 00 00 00 00 CRC
+     
+     */
+    func setUserDetails(gender:Int,age:Int,height:Int,weight:Int,strideLength:Int) {
+        
+        
+        var packetArray:[UInt8] = []
+        packetArray.append(HexPacketPrefix.SetUserDetails.rawValue)
+        packetArray.append(UInt8(gender))
+        packetArray.append(UInt8(age))
+        packetArray.append(UInt8(height))
+        packetArray.append(UInt8(weight))
+        packetArray.append(UInt8(strideLength))
+        
+        print("Setting User details: \(packetArray)")
+        sendPacketToDevice(firstBytes:packetArray)
     }
 
-//    [65, 22, 16, 49, 32, 70, 6, 0, 0, 0, 0, 0, 0, 0, 0, 4]
+
+    func getUserDetails() {
+        sendPacketToDevice(firstBytes:  [HexPacketPrefix.GetUserDetails.rawValue])
+    }
+    
+    func parseUserDetails(packet:[UInt8]) {
+        let packetArray = Packet.convertPacketToIntArray(packet: packet)
+        print("parseUserDetails\(packetArray)")
+    }
     
 }

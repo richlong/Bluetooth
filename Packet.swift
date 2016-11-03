@@ -12,18 +12,19 @@ import Foundation
 class Packet {
     
     //Creates CRC
+    //Converts Uint8 to int then back again as can be out of range for uint8
     //@param: Array of Uint8 (hex) values
     //@return: uint CRC calculation
     class func getCRC(forPacket data:[UInt8]) -> UInt8 {
         
         var counter = 0
-        var total:UInt8 = data.first!
+        var total:Int = Int(data.first!)
         //Skips first and last
         while counter < data.count - 2 {
-            total = total + data[counter + 1]
+            total = total + Int(data[counter + 1])
             counter += 1
         }
-        return (total & 0xFF)
+        return (UInt8(total & 0xFF))
     }
     
     //Creates packet
@@ -68,12 +69,14 @@ class Packet {
     }
     class func stringToInt(string:String) -> Int? {
         
-        guard (string.rangeOfCharacter(from: NSCharacterSet.decimalDigits) != nil) else {
+        let str = string.replacingOccurrences(of: " ", with: "0")
+        
+        guard (str.rangeOfCharacter(from: NSCharacterSet.decimalDigits) != nil) else {
             print("Error contains non numeric character.")
             return nil
         }
         
-        if let number = Int(string) {
+        if let number = Int(str) {
             return number
         }
         
@@ -82,8 +85,17 @@ class Packet {
     }
 
     class func convertPacketToIntArray(packet:[UInt8]) -> [Int] {
+
+        var array = [Int]()
+        for byte in packet {
+            array.append(Int(byte))
+        }
         
-        print(packet)
+        return array
+    }
+    
+    class func convertPacketToIntArrayFromHex(packet:[UInt8]) -> [Int] {
+        
         var array = [Int]()
         for byte in packet {
             let string = String(format:"%2X", byte)
@@ -94,13 +106,11 @@ class Packet {
             else {
                 array.append(-1)
             }
-            
         }
         
         return array
     }
     
-
 
     
 }
