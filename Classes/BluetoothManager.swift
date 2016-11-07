@@ -10,13 +10,14 @@ import UIKit
 import CoreBluetooth
 
 enum HexPacketPrefix:UInt8 {
-    case TodaysData = 0x43
+    case DaysData = 0x43
     case GetUserDetails = 0x42
     case SetUserDetails = 0x02
     case RealTimeStepMeter = 0x09
     case SetTime = 0x01
     case GetTime = 0x41
-
+    case FactoryReset = 0x12
+    case GetCurrentActivityData = 0x48
 }
 
 class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
@@ -31,6 +32,10 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
     let transferUUID:CBUUID = CBUUID.init(string: "FFF6")
     let recieveUUID:CBUUID = CBUUID.init(string: "FFF7")
     
+    var todayStepCount:Int = 0
+    var stepPacketCount:Int = 0
+    var monthSteps:[Int] = []
+    var isRecievingPastData = false
     func startScan() {
         centralManager = CBCentralManager(delegate: self, queue: nil)
     }
@@ -157,11 +162,17 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
             // RX & TX Set - request info
 //            getTodaysData()
 //            setDeviceTime()
-            getDeviceTime()
+//            getDeviceTime()
+//            
+//            setUserDetails(gender: 00, age: 56, height: 180, weight: 99, strideLength: 99)
+//            getUserDetails()
+//                getTodaysData()
+//            startRealtimeTracking()
+//            factoryResetDevice()
             
-            setUserDetails(gender: 00, age: 56, height: 180, weight: 99, strideLength: 99)
-            getUserDetails()
-
+//            getDaysData(day: 1)
+//             getCurrentActivityData()
+            get30DaysData()
         }
         
     }
@@ -242,14 +253,14 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
         let firstByte:UInt8 = packet.first!
         
         switch firstByte {
-        case HexPacketPrefix.TodaysData.rawValue:
-            print("Step packet \(packet)")
+        case HexPacketPrefix.DaysData.rawValue:
+            parseDaysData(packet: packet)
             break
         case HexPacketPrefix.GetTime.rawValue:
             parseDate(packet: packet)
             break
         case HexPacketPrefix.RealTimeStepMeter.rawValue:
-            print("Realtime step")
+            print("Realtime step: \(packet)")
             break
         case HexPacketPrefix.GetUserDetails.rawValue:
             parseUserDetails(packet: packet)
@@ -263,12 +274,137 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
         }
         
     }
-
     
-    func getTodaysData() {
-        sendPacketToDevice(firstBytes:  [HexPacketPrefix.TodaysData.rawValue])
+    //MARK: Realtime
+    
+    func startRealtimeTracking() {
+        sendPacketToDevice(firstBytes:  [HexPacketPrefix.RealTimeStepMeter.rawValue])
+    }
+
+    //MARK: Todays data
+    
+    func get30DaysData() {
+        print("Get 30 days data")
+        isRecievingPastData = true
+        create30DayArray()
+        var c = 1
+        while c <= 30 {
+            print(c)
+            //Add space in array for return
+            sendPacketToDevice(firstBytes:  [HexPacketPrefix.DaysData.rawValue, UInt8(c)])
+            c += 1
+        }
+        
+        print(monthSteps.count)
     }
     
+    func create30DayArray() {
+        var c = 0
+        while c <= 30 {
+            //Add space in array for return
+            monthSteps.append(0)
+            c += 1
+        }
+
+    }
+    
+    func getDaysData(day:Int) {
+        //Day 0 = today, 1 = yesterday etc up to 30.
+        sendPacketToDevice(firstBytes:  [HexPacketPrefix.DaysData.rawValue, UInt8(day)])
+    }
+    
+    func parseDaysData(packet:[UInt8]) {
+        
+//        print("Step count \(stepCount) packet count \(stepPacketCount)")
+        
+//        print(packet)
+        // 0x00 = Activity data which is what we want
+        if (packet[6] == 0x00) {
+            
+            let date = NSDate()
+            let calendar = NSCalendar.current
+            let today = calendar.component(.day, from: date as Date)
+
+            
+            let steps = Int(packet[9])+Int(packet[10])*256
+            if (isRecievingPastData) {
+                
+                if let day = Int(String(format:"%2X", packet[4])) {
+                    
+                    print("day: \(day) steps: \(steps)")
+                    
+                    monthSteps[day] = steps
+                    
+                    if day == 1 {
+                        isRecievingPastData = false
+                        print(monthSteps)
+                    }
+                }
+                
+                
+            }
+            else {
+                //Is today's data
+                print(packet)
+            }
+            
+            print("---")
+//            let calorie = Int(packet[7])+Int(packet[8])*256
+//            print("calorie: \(calorie)")
+
+//            let day = String(format:"%2X", packet[4])
+            
+//            print("day: \(day)")
+        
+
+//            print("steps: \(steps)")
+///            let distance = Int(packet[11])+Int(packet[12])*256
+//            print("distance: \(distance)")
+//            
+//            let runningSteps = Int(packet[13])+Int(packet[14])*256
+//            print("runningSteps: \(runningSteps)")
+//
+//            print("time \(Int(packet[5]))")
+        }
+        // 0xff = Sleep data
+        else if (packet[6] == 0xff) {
+            //Not req
+        }
+        
+
+        
+//        var array = [Int]()
+//        if (packet[1] == 0xf0) {
+//            if (packet[6] == 0x00) {
+////                 showstring = [NSString stringWithFormat:@"运动:%x-%x-%x %d:%d-%d:%d(%d) %.2f卡 %d步 %.2f千米 %d秒  %@",packet[2],packet[3],packet[4],packet[5]*15/60,packet[5]*15%60,(packet[5] + 1)*15/60,(packet[5] + 1)*15%60,packet[5],(packet[7]+packet[8]*256)/100.0,packet[9]+packet[10]*256,(packet[11]+packet[12]*256)/100.0,packet[13]+packet[14]*256,(packet[9]+packet[10]*256)==0?@"":@"⭐️⭐️⭐️"];
+////            
+//            array.append(Int(packet[2]))
+//            array.append(Int(packet[3]))
+//                array.append(Int(packet[4]))
+//                array.append(Int(packet[5]*15/60))
+//                array.append(Int(packet[2]))
+//                array.append(Int(packet[2]))
+//                array.append(Int(packet[2]))
+//                array.append(Int(packet[2]))
+//                array.append(Int(packet[2]))
+//                array.append(Int(packet[2]))
+//
+//            
+//            
+//            }
+////            else if (packet[6] == 0xff) {
+////                showstring = [NSString stringWithFormat:@"睡眠:%x-%x-%x %d:%d(%d) %d %d %d %d %d %d %d %d",packet[2],packet[3],packet[4],packet[5]*15/60,packet[5]*15%60,packet[5],packet[7],packet[8],packet[9],packet[10],packet[11],packet[12],packet[13],packet[14]];
+////            }
+//        }
+//        else if (packet[1] == 0xff) {
+//            showstring = @"当天没有数据";
+//        }
+
+//        let packetArray = Packet.convertPacketToIntArrayFromHex(packet: packet)
+//        print("parseTodaysData\(packetArray)")
+
+    }
+
     //MARK: Device time
     
     /*
@@ -334,7 +470,6 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
      */
     func setUserDetails(gender:Int,age:Int,height:Int,weight:Int,strideLength:Int) {
         
-        
         var packetArray:[UInt8] = []
         packetArray.append(HexPacketPrefix.SetUserDetails.rawValue)
         packetArray.append(UInt8(gender))
@@ -355,6 +490,20 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
     func parseUserDetails(packet:[UInt8]) {
         let packetArray = Packet.convertPacketToIntArray(packet: packet)
         print("parseUserDetails\(packetArray)")
+    }
+    
+    //MARK: Current activitiy data
+    
+    func getCurrentActivityData() {
+        sendPacketToDevice(firstBytes:  [HexPacketPrefix.GetCurrentActivityData.rawValue])
+    }
+
+    
+    //MARK:Factory Reset
+    
+    func factoryResetDevice() {
+        print("Factory reset device...")
+        sendPacketToDevice(firstBytes:  [HexPacketPrefix.FactoryReset.rawValue])
     }
     
 }
