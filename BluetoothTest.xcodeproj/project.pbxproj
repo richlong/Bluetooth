@@ -11,11 +11,11 @@
 		443833481DC276020045484F /* BluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443833471DC276020045484F /* BluetoothManager.swift */; };
 		445A5FFB1DC28E8800CAB9E2 /* Packet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 445A5FFA1DC28E8800CAB9E2 /* Packet.swift */; };
 		44BAAF451DB557BC00B95BC3 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44BAAF441DB557BC00B95BC3 /* AppDelegate.swift */; };
-		44BAAF471DB557BC00B95BC3 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44BAAF461DB557BC00B95BC3 /* ViewController.swift */; };
 		44BAAF4A1DB557BC00B95BC3 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 44BAAF481DB557BC00B95BC3 /* Main.storyboard */; };
 		44BAAF4C1DB557BC00B95BC3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 44BAAF4B1DB557BC00B95BC3 /* Assets.xcassets */; };
 		44BAAF4F1DB557BC00B95BC3 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 44BAAF4D1DB557BC00B95BC3 /* LaunchScreen.storyboard */; };
 		44BAAF581DB557E200B95BC3 /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 44BAAF571DB557E200B95BC3 /* CoreBluetooth.framework */; };
+		44F62B0F1DD3A86500D7F9E8 /* PairDeviceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44F62B0E1DD3A86500D7F9E8 /* PairDeviceViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,12 +23,12 @@
 		445A5FFA1DC28E8800CAB9E2 /* Packet.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Packet.swift; sourceTree = "<group>"; };
 		44BAAF411DB557BC00B95BC3 /* BluetoothTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BluetoothTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		44BAAF441DB557BC00B95BC3 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		44BAAF461DB557BC00B95BC3 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		44BAAF491DB557BC00B95BC3 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		44BAAF4B1DB557BC00B95BC3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		44BAAF4E1DB557BC00B95BC3 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		44BAAF501DB557BC00B95BC3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		44BAAF571DB557E200B95BC3 /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
+		44F62B0E1DD3A86500D7F9E8 /* PairDeviceViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PairDeviceViewController.swift; path = ../ViewController/PairDeviceViewController.swift; sourceTree = "<group>"; };
 		90918CCE0992EC5816EBCC7D /* Pods_BluetoothTest.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_BluetoothTest.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFCE7EDA9CE5DB9FC175FACE /* Pods-BluetoothTest.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BluetoothTest.release.xcconfig"; path = "Pods/Target Support Files/Pods-BluetoothTest/Pods-BluetoothTest.release.xcconfig"; sourceTree = "<group>"; };
 		BBF85D45F854552DBCBC70D4 /* Pods-BluetoothTest.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BluetoothTest.debug.xcconfig"; path = "Pods/Target Support Files/Pods-BluetoothTest/Pods-BluetoothTest.debug.xcconfig"; sourceTree = "<group>"; };
@@ -70,8 +70,8 @@
 		44BAAF431DB557BC00B95BC3 /* BluetoothTest */ = {
 			isa = PBXGroup;
 			children = (
+				44F62B0E1DD3A86500D7F9E8 /* PairDeviceViewController.swift */,
 				44BAAF441DB557BC00B95BC3 /* AppDelegate.swift */,
-				44BAAF461DB557BC00B95BC3 /* ViewController.swift */,
 				44BAAF481DB557BC00B95BC3 /* Main.storyboard */,
 				44BAAF4B1DB557BC00B95BC3 /* Assets.xcassets */,
 				44BAAF4D1DB557BC00B95BC3 /* LaunchScreen.storyboard */,
@@ -223,7 +223,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				44BAAF471DB557BC00B95BC3 /* ViewController.swift in Sources */,
+				44F62B0F1DD3A86500D7F9E8 /* PairDeviceViewController.swift in Sources */,
 				443833481DC276020045484F /* BluetoothManager.swift in Sources */,
 				44BAAF451DB557BC00B95BC3 /* AppDelegate.swift in Sources */,
 				445A5FFB1DC28E8800CAB9E2 /* Packet.swift in Sources */,

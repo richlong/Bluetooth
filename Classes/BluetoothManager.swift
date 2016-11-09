@@ -18,10 +18,12 @@ enum HexPacketPrefix:UInt8 {
     case GetTime = 0x41
     case FactoryReset = 0x12
     case GetCurrentActivityData = 0x48
+    case StepError = 0xC3
 }
 
 class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     
+    var delegate:PedometerDelegate?
     var centralManager: CBCentralManager?
     var discoveredPeripheral: CBPeripheral?
     
@@ -36,6 +38,8 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
     var stepPacketCount:Int = 0
     var monthSteps:[Int] = []
     var isRecievingPastData = false
+    var isRecievingTodaysSteps = false
+
     func startScan() {
         centralManager = CBCentralManager(delegate: self, queue: nil)
     }
@@ -83,6 +87,8 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
                 // And connect
                 print("Connecting to peripheral \(peripheral)")
                 centralManager?.connect(peripheral, options: nil)
+                
+                delegate?.deviceFound(name: peripheral.name!)
             }
 
         }
@@ -159,6 +165,8 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
         // Once this is complete, we just need to wait for the data to come in.
         
         if self.transferCharacteristic != nil && self.recieveCharacteristic != nil {
+            
+            delegate?.pedometerReady = true
             // RX & TX Set - request info
 //            getTodaysData()
 //            setDeviceTime()
@@ -172,7 +180,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
             
 //            getDaysData(day: 1)
 //             getCurrentActivityData()
-            get30DaysData()
+//            get30DaysData()
         }
         
     }
@@ -268,6 +276,11 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
         case HexPacketPrefix.SetUserDetails.rawValue:
             print("SetUserDetails: \(packet)")
             break
+        case HexPacketPrefix.StepError.rawValue:
+            print("StepError: \(packet)")
+            stepPacketCount += 1
+            break
+
             
         default:
             print("Packet unknown: \(packet)")
@@ -286,8 +299,10 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
     func get30DaysData() {
         print("Get 30 days data")
         isRecievingPastData = true
+        isRecievingTodaysSteps = false
+        stepPacketCount = 0
         create30DayArray()
-        var c = 1
+        var c = 2
         while c <= 30 {
             print(c)
             //Add space in array for return
@@ -299,6 +314,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
     }
     
     func create30DayArray() {
+        monthSteps.removeAll()
         var c = 0
         while c <= 30 {
             //Add space in array for return
@@ -306,6 +322,14 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
             c += 1
         }
 
+    }
+    
+    func getTodaysData() {
+        isRecievingTodaysSteps = true
+        isRecievingPastData = false
+        stepPacketCount = 0
+        todayStepCount = 0
+        getDaysData(day: 0)
     }
     
     func getDaysData(day:Int) {
@@ -329,26 +353,58 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
             let steps = Int(packet[9])+Int(packet[10])*256
             if (isRecievingPastData) {
                 
+                stepPacketCount += 1
+                print("packet count \(stepPacketCount)")
+
                 if let day = Int(String(format:"%2X", packet[4])) {
                     
                     print("day: \(day) steps: \(steps)")
                     
                     monthSteps[day] = steps
                     
-                    if day == 1 {
-                        isRecievingPastData = false
-                        print(monthSteps)
-                    }
                 }
-                
+                else {
+                    
+                    let day = Int(packet[4])
+                    monthSteps[day] = steps
+                    
+                    print("day: \(day) steps: \(steps)")
+
+                    if day == 3 {
+                        delegate?.monthStepsRecieved(steps: monthSteps)
+                        isRecievingPastData = false
+//                        print(monthSteps)
+                    }
+
+//                    print("packet \(packet)")
+                }
                 
             }
             else {
                 //Is today's data
+                print("todays data")
                 print(packet)
+                stepPacketCount += 1
+//                print("packet count \(stepPacketCount)")
+                
+                let steps = Int(packet[9])+Int(packet[10])*256
+                todayStepCount += steps
+
+//                print("steps: \(steps)")
+//                let distance = Int(packet[11])+Int(packet[12])*256
+
+                
+                if stepPacketCount == 95 {
+                    //All step packets recieved
+                    print("Today's steps: \(todayStepCount)")
+                    delegate?.todayStepsRecieved(steps: todayStepCount)
+                    isRecievingTodaysSteps = false
+                    stepPacketCount = 0
+                }
+
             }
             
-            print("---")
+//            print("---")
 //            let calorie = Int(packet[7])+Int(packet[8])*256
 //            print("calorie: \(calorie)")
 
@@ -488,8 +544,15 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
     }
     
     func parseUserDetails(packet:[UInt8]) {
+        
         let packetArray = Packet.convertPacketToIntArray(packet: packet)
-        print("parseUserDetails\(packetArray)")
+        
+        if packetArray.count > 0 {
+            let user = PedometerUserInfo(age: packetArray[2], height: packetArray[3], weight: packetArray[4], stridgeLength: packetArray[5])
+            delegate?.userInfoRecieved(userInfo: user)
+        }
+        
+//        print("parseUserDetails\(packetArray)")
     }
     
     //MARK: Current activitiy data
@@ -506,4 +569,11 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
         sendPacketToDevice(firstBytes:  [HexPacketPrefix.FactoryReset.rawValue])
     }
     
+}
+
+struct PedometerUserInfo {
+    var age:Int
+    var height:Int
+    var weight:Int
+    var stridgeLength:Int
 }
