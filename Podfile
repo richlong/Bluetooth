@@ -5,8 +5,7 @@ use_frameworks!
 
 target 'BluetoothTest' do
 
-#pod 'BluetoothKit', '~> 0.2.0'
-
+pod 'FLEX', '~> 2.0'
 
 end
 

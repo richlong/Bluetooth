@@ -4,6 +4,11 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
+		<key>FLEX.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>Pods-BluetoothTest.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -12,7 +17,12 @@
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
-		<key>D9360078FA57970A8A8D1C2544035123</key>
+		<key>D358B38418C521C916A6ED5298C3810D</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>E62D938B354232F63CAD2C8C7E7C6B45</key>
 		<dict>
 			<key>primary</key>
 			<true/>

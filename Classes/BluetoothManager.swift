@@ -34,12 +34,14 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
     let transferUUID:CBUUID = CBUUID.init(string: "FFF6")
     let recieveUUID:CBUUID = CBUUID.init(string: "FFF7")
     
-    var todayStepCount:Int = 0
+    let pastDataLimit = 29 //30 days
+    var currentDayStepCount:Int = 0
     var stepPacketCount:Int = 0
+    var currentDay:Int = 0
     var monthSteps:[Int] = []
-    var isRecievingPastData = false
-    var isRecievingTodaysSteps = false
-
+    var isRecievingStepData = false
+    var currentDayRequestTotal = 0
+    var isGettingSingleDay = false
     func startScan() {
         centralManager = CBCentralManager(delegate: self, queue: nil)
     }
@@ -67,6 +69,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
     }
     
     private func scan() {
+        delegate?.pedometerReady = false
         centralManager?.scanForPeripherals(withServices: [serviceUUID], options: nil)
         print("Scanning started")
     }
@@ -89,6 +92,9 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
                 centralManager?.connect(peripheral, options: nil)
                 
                 delegate?.deviceFound(name: peripheral.name!)
+            }
+            else {
+                delegate?.deviceFound(name: "Unable to find device")
             }
 
         }
@@ -162,25 +168,13 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
                 print("rx set: \(characteristic)")
             }
         }
+        
         // Once this is complete, we just need to wait for the data to come in.
         
         if self.transferCharacteristic != nil && self.recieveCharacteristic != nil {
-            
-            delegate?.pedometerReady = true
             // RX & TX Set - request info
-//            getTodaysData()
-//            setDeviceTime()
-//            getDeviceTime()
-//            
-//            setUserDetails(gender: 00, age: 56, height: 180, weight: 99, strideLength: 99)
-//            getUserDetails()
-//                getTodaysData()
-//            startRealtimeTracking()
-//            factoryResetDevice()
-            
-//            getDaysData(day: 1)
-//             getCurrentActivityData()
-//            get30DaysData()
+            delegate?.pedometerReady = true
+            delegate?.deviceReady()
         }
         
     }
@@ -281,7 +275,6 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
             stepPacketCount += 1
             break
 
-            
         default:
             print("Packet unknown: \(packet)")
         }
@@ -298,166 +291,87 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
     
     func get30DaysData() {
         print("Get 30 days data")
-        isRecievingPastData = true
-        isRecievingTodaysSteps = false
-        stepPacketCount = 0
-        create30DayArray()
-        var c = 2
-        while c <= 30 {
-            print(c)
-            //Add space in array for return
-            sendPacketToDevice(firstBytes:  [HexPacketPrefix.DaysData.rawValue, UInt8(c)])
-            c += 1
-        }
-        
-        print(monthSteps.count)
-    }
-    
-    func create30DayArray() {
-        monthSteps.removeAll()
-        var c = 0
-        while c <= 30 {
-            //Add space in array for return
-            monthSteps.append(0)
-            c += 1
-        }
-
+        isRecievingStepData = true
+        resetStepData()
+        currentDayRequestTotal = pastDataLimit
+        getDaysData(day: 0)
     }
     
     func getTodaysData() {
-        isRecievingTodaysSteps = true
-        isRecievingPastData = false
-        stepPacketCount = 0
-        todayStepCount = 0
+        print("Get today's data")
+        isRecievingStepData = true
+        isGettingSingleDay = true
+        resetStepData()
+        currentDayRequestTotal = 0
         getDaysData(day: 0)
+    }
+    
+    func resetStepData() {
+        currentDay = 0;
+        stepPacketCount = 0
+        currentDayStepCount = 0
+        monthSteps.removeAll()
     }
     
     func getDaysData(day:Int) {
         //Day 0 = today, 1 = yesterday etc up to 30.
+        print("Getting day: \(day)")
         sendPacketToDevice(firstBytes:  [HexPacketPrefix.DaysData.rawValue, UInt8(day)])
     }
     
     func parseDaysData(packet:[UInt8]) {
+    
+        //Each day's data contains 96 packets.
+        stepPacketCount += 1
         
-//        print("Step count \(stepCount) packet count \(stepPacketCount)")
+        //Check if finished
+        if currentDay > currentDayRequestTotal {
+            getStepsFinished()
+            return
+        }
         
-//        print(packet)
+        if (packet[1] == 0xFF) {
+            //Invalid data
+            print("Day \(currentDay) data invalid")
+            currentDay += 1
+            monthSteps.append(0)
+            getDaysData(day: currentDay)
+            return
+        }
+
         // 0x00 = Activity data which is what we want
         if (packet[6] == 0x00) {
-            
-            let date = NSDate()
-            let calendar = NSCalendar.current
-            let today = calendar.component(.day, from: date as Date)
-
-            
             let steps = Int(packet[9])+Int(packet[10])*256
-            if (isRecievingPastData) {
-                
-                stepPacketCount += 1
-                print("packet count \(stepPacketCount)")
-
-                if let day = Int(String(format:"%2X", packet[4])) {
-                    
-                    print("day: \(day) steps: \(steps)")
-                    
-                    monthSteps[day] = steps
-                    
-                }
-                else {
-                    
-                    let day = Int(packet[4])
-                    monthSteps[day] = steps
-                    
-                    print("day: \(day) steps: \(steps)")
-
-                    if day == 3 {
-                        delegate?.monthStepsRecieved(steps: monthSteps)
-                        isRecievingPastData = false
-//                        print(monthSteps)
-                    }
-
-//                    print("packet \(packet)")
-                }
-                
-            }
-            else {
-                //Is today's data
-                print("todays data")
-                print(packet)
-                stepPacketCount += 1
-//                print("packet count \(stepPacketCount)")
-                
-                let steps = Int(packet[9])+Int(packet[10])*256
-                todayStepCount += steps
-
-//                print("steps: \(steps)")
-//                let distance = Int(packet[11])+Int(packet[12])*256
-
-                
-                if stepPacketCount == 95 {
-                    //All step packets recieved
-                    print("Today's steps: \(todayStepCount)")
-                    delegate?.todayStepsRecieved(steps: todayStepCount)
-                    isRecievingTodaysSteps = false
-                    stepPacketCount = 0
-                }
-
-            }
-            
-//            print("---")
-//            let calorie = Int(packet[7])+Int(packet[8])*256
-//            print("calorie: \(calorie)")
-
-//            let day = String(format:"%2X", packet[4])
-            
-//            print("day: \(day)")
-        
-
-//            print("steps: \(steps)")
-///            let distance = Int(packet[11])+Int(packet[12])*256
-//            print("distance: \(distance)")
-//            
-//            let runningSteps = Int(packet[13])+Int(packet[14])*256
-//            print("runningSteps: \(runningSteps)")
-//
-//            print("time \(Int(packet[5]))")
+            currentDayStepCount += steps
         }
         // 0xff = Sleep data
         else if (packet[6] == 0xff) {
             //Not req
         }
         
-
+        //Each step req returns 96 packets per day
+        if stepPacketCount == 96 {
+            //All step packets recieved
+            print("Current day steps: \(currentDayStepCount)")
+            stepPacketCount = 0
+            monthSteps.append(currentDayStepCount)
+            
+            if isGettingSingleDay {
+                getStepsFinished()
+            }
+            else {
+                currentDay += 1
+                getDaysData(day: currentDay)
+            }
+        }
         
-//        var array = [Int]()
-//        if (packet[1] == 0xf0) {
-//            if (packet[6] == 0x00) {
-////                 showstring = [NSString stringWithFormat:@"运动:%x-%x-%x %d:%d-%d:%d(%d) %.2f卡 %d步 %.2f千米 %d秒  %@",packet[2],packet[3],packet[4],packet[5]*15/60,packet[5]*15%60,(packet[5] + 1)*15/60,(packet[5] + 1)*15%60,packet[5],(packet[7]+packet[8]*256)/100.0,packet[9]+packet[10]*256,(packet[11]+packet[12]*256)/100.0,packet[13]+packet[14]*256,(packet[9]+packet[10]*256)==0?@"":@"⭐️⭐️⭐️"];
-////            
-//            array.append(Int(packet[2]))
-//            array.append(Int(packet[3]))
-//                array.append(Int(packet[4]))
-//                array.append(Int(packet[5]*15/60))
-//                array.append(Int(packet[2]))
-//                array.append(Int(packet[2]))
-//                array.append(Int(packet[2]))
-//                array.append(Int(packet[2]))
-//                array.append(Int(packet[2]))
-//                array.append(Int(packet[2]))
-//
-//            
-//            
-//            }
-////            else if (packet[6] == 0xff) {
-////                showstring = [NSString stringWithFormat:@"睡眠:%x-%x-%x %d:%d(%d) %d %d %d %d %d %d %d %d",packet[2],packet[3],packet[4],packet[5]*15/60,packet[5]*15%60,packet[5],packet[7],packet[8],packet[9],packet[10],packet[11],packet[12],packet[13],packet[14]];
-////            }
-//        }
-//        else if (packet[1] == 0xff) {
-//            showstring = @"当天没有数据";
-//        }
-
-//        let packetArray = Packet.convertPacketToIntArrayFromHex(packet: packet)
-//        print("parseTodaysData\(packetArray)")
+    }
+    
+    func getStepsFinished() {
+        isRecievingStepData = false
+        isGettingSingleDay = false
+        print("Month array: \(monthSteps)")
+        delegate?.monthStepsRecieved(steps: monthSteps)
 
     }
 
